@@ -24,6 +24,9 @@ function loadWaveShaperCurves() {
     if (waveshapers.hasOwnProperty(curveName)) {
       option = document.createElement('option');
       option.value = curveName;
+      if (waveshapers[curveName] === waveshaper.curve) {
+        option.selected = true;
+      }
       option.appendChild(document.createTextNode(curveName));
       select.appendChild(option);
     }
@@ -105,7 +108,16 @@ function updateCabinet() {
   loadIR(convolutions[document.querySelector('select#cabinet').value]);
 }
 
+function togglePlaying() {
+  if (playing) {
+    rawGuitar.stop();
+  } else {
+    play();
+  }
+}
+
 window.addEventListener('DOMContentLoaded', function () {
+  document.querySelector('button#play-toggle').addEventListener('click', togglePlaying);
   loadWaveShaperCurves();
   document.querySelector('select#waveshaper-curve').addEventListener('change', updateWaveShaperCurve);
   updateWaveShaperCurve();

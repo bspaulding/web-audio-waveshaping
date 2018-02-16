@@ -10,23 +10,28 @@ var rawGuitar = audioContext.createBufferSource();
 var gain = audioContext.createGain();
 var convolver = audioContext.createConvolver();
 var waveshaper = audioContext.createWaveShaper();
-waveshaper.curve = waveshapers.passthrough;
+waveshaper.curve = waveshapers.figureSix;
 waveshaper.oversample = '4x';
 
 chain(rawGuitar, waveshaper, convolver, gain, audioContext.destination);
 
-var loadRawGuitar = new XMLHttpRequest();
-loadRawGuitar.open("GET", "audio/guitar-raw.wav", true);
-loadRawGuitar.responseType = "arraybuffer";
-loadRawGuitar.onload = function () {
-  audioContext.decodeAudioData(loadRawGuitar.response, function(buffer) {
-    rawGuitar.buffer = buffer;
-    rawGuitar.loop = true;
-    rawGuitar.start(0);
-    console.log('guitar started');
-  });
-};
-loadRawGuitar.send();
+var playing = false;
+function play() {
+  var loadRawGuitar = new XMLHttpRequest();
+  loadRawGuitar.open("GET", "audio/guitar-raw.wav", true);
+  loadRawGuitar.responseType = "arraybuffer";
+  loadRawGuitar.onload = function () {
+    audioContext.decodeAudioData(loadRawGuitar.response, function(buffer) {
+      rawGuitar.buffer = buffer;
+      rawGuitar.loop = true;
+      rawGuitar.start(0);
+      playing = true;
+      console.log('guitar started');
+    });
+  };
+  loadRawGuitar.send();
+}
+play();
 
 var convolutionUrls = [
   "audio/convolutions/GuitarHacks Impulses/JJ Powertube Impulses/GuitarHack JJ BBAE 0.wav",
