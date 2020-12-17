@@ -2,7 +2,7 @@ function customCurve() {
   var k = parseInt(document.querySelector('#custom-k').value, 10);
   var m = parseInt(document.querySelector('#custom-m').value, 10);
   console.log('k:', k, 'm:', m);
-  var curve = waveshapers.custom(k,m);
+  var curve = waveshapers.custom(k, m);
   return curve;
 }
 
@@ -24,7 +24,7 @@ function loadWaveShaperCurves() {
     if (waveshapers.hasOwnProperty(curveName)) {
       option = document.createElement('option');
       option.value = curveName;
-      if (waveshapers[curveName] === waveshaper.curve) {
+      if ('undefined' !== typeof window.waveshaper && waveshapers[curveName] === waveshaper.curve) {
         option.selected = true;
       }
       option.appendChild(document.createTextNode(curveName));
@@ -34,6 +34,7 @@ function loadWaveShaperCurves() {
 }
 
 function updateGain() {
+  if (!inited) { return; }
   gain.gain.value = document.querySelector('input#gain').value;
 }
 
@@ -55,7 +56,7 @@ function graphCurrentCurve() {
     var curve = new Float32Array(samples)
       , i = 0
       , x;
-    for ( ; i < samples; i++ ) {
+    for (; i < samples; i++) {
       x = i * 2 / samples - 1;
       curve[i] = equation(x);
     }
@@ -85,9 +86,9 @@ function graphCurrentCurve() {
   // curve
   ctx.strokeStyle = 'red'
   ctx.beginPath()
-  ctx.moveTo(height, ( curve[i++] + 1 ) * width / 2)
-  for (; i < len; ++i ) {
-    ctx.lineTo(height - i, ( curve[i] + 1 ) * width / 2)
+  ctx.moveTo(height, (curve[i++] + 1) * width / 2)
+  for (; i < len; ++i) {
+    ctx.lineTo(height - i, (curve[i] + 1) * width / 2)
   }
   ctx.stroke()
 }
@@ -105,19 +106,29 @@ function loadCabinets() {
 }
 
 function updateCabinet() {
+  if (!inited) { return; }
   loadIR(convolutions[document.querySelector('select#cabinet').value]);
 }
 
 function togglePlaying() {
+  const playButton = document.querySelector('button#play-toggle');
   if (playing) {
     rawGuitar.stop();
+    playing = false;
+    playButton.textContent = 'Play';
   } else {
     play();
+    playButton.textContent = 'Stop';
   }
 }
 
 window.addEventListener('DOMContentLoaded', function () {
   document.querySelector('button#play-toggle').addEventListener('click', togglePlaying);
+});
+
+function initUI() {
+  console.log('initUI');
+
   loadWaveShaperCurves();
   document.querySelector('select#waveshaper-curve').addEventListener('change', updateWaveShaperCurve);
   updateWaveShaperCurve();
@@ -131,4 +142,4 @@ window.addEventListener('DOMContentLoaded', function () {
   loadCabinets();
   document.querySelector('select#cabinet').addEventListener('change', updateCabinet);
   updateCabinet();
-});
+};

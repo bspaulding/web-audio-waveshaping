@@ -1,37 +1,67 @@
 function chain() {
   var nodes = Array.prototype.slice.apply(arguments, [0]);
   for (var i = 0; i < nodes.length - 1; i += 1) {
-    nodes[i].connect(nodes[i+1]);
+    nodes[i].connect(nodes[i + 1]);
   }
 }
 
-var audioContext = new (window.AudioContext || window.webkitAudioContext)();
-var rawGuitar = audioContext.createBufferSource();
-var gain = audioContext.createGain();
-var convolver = audioContext.createConvolver();
-var waveshaper = audioContext.createWaveShaper();
-waveshaper.curve = waveshapers.figureSix;
-waveshaper.oversample = '4x';
+let inited = false;
+function init() {
+  var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  var rawGuitar = audioContext.createBufferSource();
+  var gain = audioContext.createGain();
+  var convolver = audioContext.createConvolver();
+  var waveshaper = audioContext.createWaveShaper();
+  waveshaper.curve = waveshapers.figureSix;
+  waveshaper.oversample = '4x';
 
-chain(rawGuitar, waveshaper, convolver, gain, audioContext.destination);
+  chain(rawGuitar, waveshaper, convolver, gain, audioContext.destination);
+
+  window.audioContext = audioContext;
+  window.rawGuitar = rawGuitar;
+  window.waveshaper = waveshaper;
+  window.convolver = convolver;
+  window.gain = gain;
+
+  inited = true;
+}
+
 
 var playing = false;
+var rawGuitarBuffer;
 function play() {
-  var loadRawGuitar = new XMLHttpRequest();
-  loadRawGuitar.open("GET", "audio/guitar-raw.wav", true);
-  loadRawGuitar.responseType = "arraybuffer";
-  loadRawGuitar.onload = function () {
-    audioContext.decodeAudioData(loadRawGuitar.response, function(buffer) {
-      rawGuitar.buffer = buffer;
-      rawGuitar.loop = true;
-      rawGuitar.start(0);
-      playing = true;
-      console.log('guitar started');
-    });
-  };
-  loadRawGuitar.send();
+  if (!inited) {
+    init();
+    initUI();
+  }
+
+  if (!rawGuitarBuffer) {
+    var loadRawGuitar = new XMLHttpRequest();
+    loadRawGuitar.open("GET", "audio/guitar-raw.wav", true);
+    loadRawGuitar.responseType = "arraybuffer";
+    loadRawGuitar.onload = function () {
+      window.audioContext.decodeAudioData(loadRawGuitar.response, function (buffer) {
+        rawGuitarBuffer = buffer;
+        loadAndStartRawGuitar();
+      });
+    };
+    loadRawGuitar.send();
+  } else {
+    loadAndStartRawGuitar();
+  }
 }
-play();
+
+function loadAndStartRawGuitar() {
+  rawGuitar.disconnect();
+  rawGuitar = audioContext.createBufferSource();
+  window.rawGuitar = rawGuitar;
+  rawGuitar.buffer = rawGuitarBuffer;
+  rawGuitar.loop = true;
+  chain(rawGuitar, waveshaper);
+  rawGuitar.start(0);
+  playing = true;
+  console.log('guitar started');
+}
 
 var convolutionUrls = [
   "audio/convolutions/GuitarHacks Impulses/JJ Powertube Impulses/GuitarHack JJ BBAE 0.wav",
@@ -96,6 +126,11 @@ for (var i = 0; i < convolutionUrls.length; i += 1) {
 }
 
 function loadIR(ir) {
+  if (!inited) {
+    console.warn("called loadIR before init!");
+    return;
+  }
+
   if (ir.buffer) {
     convolver.buffer = ir.buffer;
     console.log('loaded ', ir.url);
@@ -106,7 +141,7 @@ function loadIR(ir) {
   loadConvolution.open("GET", ir.url, true);
   loadConvolution.responseType = "arraybuffer";
   loadConvolution.onload = function () {
-    audioContext.decodeAudioData(loadConvolution.response, function(buffer) {
+    audioContext.decodeAudioData(loadConvolution.response, function (buffer) {
       ir.buffer = buffer;
       convolver.buffer = buffer;
       console.log('loaded ', ir.url);
