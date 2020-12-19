@@ -10,8 +10,10 @@ function updateWaveShaperCurve() {
   var curveName = document.querySelector('select#waveshaper-curve').value;
   if (curveName === 'custom') {
     waveshaper.curve = customCurve();
-  } else {
+  } else if (waveshapers[curveName]) {
     waveshaper.curve = waveshapers[curveName];
+  } else {
+    console.warn(`No curve named ${curveName}!`);
   }
   graphCurrentCurve();
 }
@@ -48,28 +50,16 @@ function updateCustomCurve() {
 }
 
 function graphCurrentCurve() {
-  if (!waveshaper.curve || !waveshaper.curve.equation) {
+  if (!waveshaper.curve) {
     return;
-  }
-
-  var makeCurve = function (samples, equation) {
-    var curve = new Float32Array(samples)
-      , i = 0
-      , x;
-    for (; i < samples; i++) {
-      x = i * 2 / samples - 1;
-      curve[i] = equation(x);
-    }
-    return curve;
   }
 
   var canvas = document.getElementById('transfergraph')
     , ctx = canvas.getContext('2d')
     , height = canvas.height
     , width = canvas.width
-    , len = width
-    , curve = makeCurve(len, waveshaper.curve.equation);
-  var i = 0;
+    , len = waveshaper.curve.length
+    , curve = waveshaper.curve;
   ctx.clearRect(0, 0, width, height)
   ctx.strokeStyle = '#ccc'
   ctx.lineWidth = 1
@@ -86,9 +76,17 @@ function graphCurrentCurve() {
   // curve
   ctx.strokeStyle = 'red'
   ctx.beginPath()
-  ctx.moveTo(height, (curve[i++] + 1) * width / 2)
-  for (; i < len; ++i) {
-    ctx.lineTo(height - i, (curve[i] + 1) * width / 2)
+  var i = 0;
+  for (var i = 0; i < len; ++i) {
+    let x = width / len * i;
+    // -1 => 1000, 1 => 0
+    // *-1, 1 => 1000, -1 => 0
+    // +1, 2 => 1000, 0 => 0
+    let y = (curve[i] * -1 + 1) * height / 2;
+    if (i < 5 || i > len - 5) {
+      console.log({ i, ['curve[i]']: curve[i], x, y });
+    }
+    ctx[(i === 0 ? 'moveTo' : 'lineTo')](x, y)
   }
   ctx.stroke()
 }
