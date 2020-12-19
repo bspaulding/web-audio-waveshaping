@@ -1,5 +1,14 @@
 var waveshapers = {};
 
+// https://stats.stackexchange.com/a/281165
+function normalize(a, b, xs) {
+  let min = Math.min.apply(null, xs);
+  let max = Math.max.apply(null, xs);
+  return xs.map(x => {
+    return (b - a) * (x - min) / (max - min) + a
+  });
+}
+
 var makeShaper = function (fn) {
   var curve = new Float32Array(44100);
   var i;
